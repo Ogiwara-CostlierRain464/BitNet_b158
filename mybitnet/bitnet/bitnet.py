@@ -30,6 +30,7 @@ class BitLinear(nn.Linear):
         self.epsilon = 1e-6  # overflow防止のための小さな値
 
     def absmax_quantize(self, x: torch.Tensor, Qb: int, epsilon: float) -> Tuple[torch.Tensor, float]:
+        # 元論文のactivation_qunatに相当。
         if self.flg_before_linear:
             # パターン①：　通常は[-Qb, Qb]にスケール: 式(4), (5)を適用
             gamma = torch.abs(x).max().clamp(min=epsilon)
@@ -98,6 +99,7 @@ class BitLinear158b(BitLinear):
         
     # 1. quantize_weightsを{-1, 1}の2値化から{-1, 0, 1}の3値化に修正
     def quantize_weights(self, weight: torch.Tensor, epsilon: float) -> Tuple[torch.Tensor, float]:
+        # 元論文のweight_qunatに相当。
         # 式(3): betaの計算
         beta = weight.abs().mean().clamp(min=epsilon)
 
@@ -114,6 +116,7 @@ class BitLinear158b(BitLinear):
     
     # 2. BitLinear b158では、[0, Qb]のスケーリングは行わないません。
     def absmax_quantize(self, x: torch.Tensor, Qb: int, epsilon: float) -> Tuple[torch.Tensor, float]:
+        # 元論文のactivation_qunatに相当。
         # スケールgammaの計算（absmax quantization）
         gamma = torch.abs(x).max().clamp(min=epsilon)
 
