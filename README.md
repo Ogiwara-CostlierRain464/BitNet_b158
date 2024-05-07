@@ -10,3 +10,4 @@ noteで実装を進めているBitLinear, BitLinearb158のコードとなりま�
 transformersが原因で上手くモデルが読み込めないことがあるに。修正がまだmainブランチには適用されていないので、 
 issueを元に特定のブランチをpip installする。
 
+https://github.com/huggingface/transformers/issues/29828
