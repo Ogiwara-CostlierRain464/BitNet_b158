@@ -10,7 +10,7 @@ from transformers.models.llama.modeling_llama import (
     LlamaMLP,
     LlamaDecoderLayer,
 )
-from .bitnet158 import BitLinear158
+from bitnet158 import BitLinear158
 import torch
 from torch import nn
 
