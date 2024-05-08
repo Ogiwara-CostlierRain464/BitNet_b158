@@ -48,7 +48,6 @@ class BitLinear1Opt(nn.Linear):
         w_b = (w_b - w_scaled).detach() + w_scaled
         return w_b, beta
 
-
     def forward(self, x: Tensor) -> Tensor:
         # LayerNorm
         x_norm = self.layer_norm(x)

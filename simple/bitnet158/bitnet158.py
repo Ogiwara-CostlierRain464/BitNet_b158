@@ -4,13 +4,11 @@ from typing import Tuple
 from ..common import BitRMSNorm, LN
 
 EPS = 1e-5
-Qb = 2 ** 7
 
 
 def activation_quant(x: torch.Tensor) -> Tensor:
-    scale: float = Qb / x.abs().max(dim=-1, keepdim=True).values.clamp_(min=EPS)  # overflow防止
-    y = (x * scale).round().clamp(-Qb, Qb - 1) / scale
-
+    scale: float = 127 / x.abs().max(dim=-1, keepdim=True).values.clamp_(min=EPS)  # overflow防止
+    y = (x * scale).round().clamp(-128, 127) / scale
     return y
 
 
@@ -27,7 +25,6 @@ class BitLinear158(nn.Linear):
     def __init__(self, in_features, out_features, bias=False):
         super(BitLinear158, self).__init__(in_features, out_features, bias)
         self.layer_norm = BitRMSNorm(hidden_size=in_features, eps=EPS)
-        # self.layer_norm = LN() # BitNet1の元論文
 
     def forward(self, x: Tensor) -> Tensor:
         w = self.weight

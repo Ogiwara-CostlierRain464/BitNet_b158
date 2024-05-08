@@ -11,7 +11,7 @@ def activation_quant(x: torch.Tensor, before_linear=True) -> Tensor:
     if before_linear:
         # (4), (5)
         scale: float = Qb / x.abs().max(dim=-1, keepdim=True).values.clamp_(min=EPS)  # overflow防止
-        y = (x * scale).round().clamp(-Qb, Qb - 1) / scale
+        y = (x * scale).round().clamp(-Qb, Qb - 1) / scale  # STEを外で行うため、ここでdequantize
     else:
         eta = x.min()
         scale: float = Qb / (x - eta).abs().max(dim=-1, keepdim=True).values.clamp_(min=EPS)
@@ -28,7 +28,7 @@ def weight_quant(w: torch.Tensor) -> Tensor:
     alpha = w.mean()
     w_b = sign(w - alpha)
     beta = w.abs().mean()
-    return w_b
+    return w_b * beta
 
 
 class BitLinear1(nn.Linear):
