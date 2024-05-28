@@ -1,7 +1,24 @@
 import torch
 from torch import nn, Tensor
 from typing import Tuple
-from ..common import BitRMSNorm, LN
+
+
+class BitRMSNorm(nn.Module):
+    def __init__(self, hidden_size, eps=1e-6):
+        """
+        BitRMSNorm is equivalent to LlamaRMSNorm and T5LayerNorm
+        refers: https://github.com/huggingface/transformers/blob/c5f0288bc7d76f65996586f79f69fba8867a0e67/src/transformers/models/llama/modeling_llama.py#L76C1-L90C59
+        """
+        super().__init__()
+        self.weight = nn.Parameter(torch.ones(hidden_size))
+        self.variance_epsilon = eps
+
+    def forward(self, hidden_states):
+        input_dtype = hidden_states.dtype
+        hidden_states = hidden_states.to(torch.float32)
+        variance = hidden_states.pow(2).mean(-1, keepdim=True)
+        hidden_states = hidden_states * torch.rsqrt(variance + self.variance_epsilon)
+        return self.weight * hidden_states.to(input_dtype)
 
 
 class BitLinear158Opt(nn.Linear):
@@ -28,20 +45,12 @@ class BitLinear158Opt(nn.Linear):
         x_q = (x_q - x_scaled).detach() + x_scaled
         return x_q, gamma
 
-    def sign(self, x: torch.Tensor):
-        return (x > 0).to(torch.int8) * 2 - 1
-
     def weight_quant(self, w: torch.Tensor) -> tuple[Tensor, float]:
-        alpha = w.mean()
-        w_center = w - alpha
-        w_b = self.sign(w_center)
-        beta = w.abs().mean()
-
-        w_scaled = w_center / w_center.abs().max().clamp(min=self.EPS)
-        # w_b = (w_b - w_center).detach() + w_center
-        w_b = (w_b - w_scaled).detach() + w_scaled
-        return w_b, beta
-
+        gamma = w.abs().mean().clamp(min=self.EPS)
+        w_tr = (w / gamma).round().clamp_(-1, 1)
+        # STE
+        w_tr = (w_tr - w).detach() + w
+        return w_tr, gamma
 
     def forward(self, x: Tensor) -> Tensor:
         # LayerNorm
